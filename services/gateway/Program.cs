@@ -20,4 +20,13 @@ app.MapGet("/health", () => Results.Ok(new
     utcTime = DateTime.UtcNow
 }));
 
+app.MapPost("/assistant/process", (object request) =>
+{
+    return Results.Ok(new
+    {
+        message = "Request received",
+        request
+    });
+});
+
 app.Run();

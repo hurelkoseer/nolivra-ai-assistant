@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Nolivra.Gateway")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+da9217343c5a73297db870fc270b061c279d2182")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ada97753597f09ae7142682d06e7fd9f7deb4cd1")]
 [assembly: System.Reflection.AssemblyProductAttribute("Nolivra.Gateway")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Nolivra.Gateway")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
