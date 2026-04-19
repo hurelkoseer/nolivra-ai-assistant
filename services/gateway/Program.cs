@@ -1,7 +1,13 @@
+using Nolivra.Gateway.Services;
+using Nolivra.Gateway.Models;
+using System.Text.Json;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddScoped<AiService>();
 
 var app = builder.Build();
 
@@ -20,13 +26,44 @@ app.MapGet("/health", () => Results.Ok(new
     utcTime = DateTime.UtcNow
 }));
 
-app.MapPost("/assistant/process", (object request) =>
+app.MapPost("/assistant/process", async (AssistantRequest request, AiService aiService) =>
 {
+    var result = await aiService.ProcessAsync(request.Input);
+
+    AssistantIntentResult? parsed;
+
+    try
+    {
+        parsed = JsonSerializer.Deserialize<AssistantIntentResult>(result,
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+    }
+    catch
+    {
+        parsed = null;
+    }
+
+    if (parsed is not null)
+    {
+        return Results.Ok(new
+        {
+            data = parsed,
+            receivedAt = DateTime.UtcNow
+        });
+    }
+
     return Results.Ok(new
     {
-        message = "Request received",
-        request
+        data = new
+        {
+            error = "invalid_json_from_ai",
+            raw = result
+        },
+        receivedAt = DateTime.UtcNow
     });
+
 });
 
 app.Run();
