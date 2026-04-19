@@ -1,0 +1,6 @@
+@Nolivra.Gateway_HostAddress = http://localhost:5116
+
+GET {{Nolivra.Gateway_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
