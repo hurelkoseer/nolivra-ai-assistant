@@ -1,7 +1,6 @@
 namespace Nolivra.Gateway.Models;
 
-public record AssistantRequest(
-    string Input,
-    string? Locale,
-    string? Timezone
-);
+public sealed class AssistantRequest
+{
+    public string Input { get; set; } = default!;
+}
