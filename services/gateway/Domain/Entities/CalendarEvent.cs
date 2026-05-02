@@ -29,4 +29,31 @@ public sealed class CalendarEvent
             EndAtUtc = endAtUtc?.ToUniversalTime()
         };
     }
+
+    public void Update(
+    string? title,
+    string? details,
+    DateTimeOffset? startAtUtc,
+    DateTimeOffset? endAtUtc)
+    {
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            Title = title;
+        }
+
+        if (details is not null)
+        {
+            Details = details;
+        }
+
+        if (startAtUtc.HasValue)
+        {
+            StartAtUtc = startAtUtc.Value;
+        }
+
+        if (endAtUtc.HasValue)
+        {
+            EndAtUtc = endAtUtc.Value;
+        }
+    }
 }

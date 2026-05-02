@@ -92,25 +92,78 @@ User input: {input}
             .GetProperty("content")
             .GetString();
 
-        if (string.IsNullOrWhiteSpace(content))
-            throw new InvalidOperationException("OpenAI returned empty content.");
-
-        var result = JsonSerializer.Deserialize<AssistantIntentResult>(
-            content,
-            new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-        if (result is null)
-            throw new InvalidOperationException("Failed to deserialize AI response.");
-
-        if (string.IsNullOrWhiteSpace(result.Intent))
-            throw new InvalidOperationException("AI returned empty intent.");
-
-        if (string.IsNullOrWhiteSpace(result.Title))
-            throw new InvalidOperationException("AI returned empty title.");
+        var result = ParseAssistantIntentResult(content);
 
         return new AiProcessingResult(content, result);
+    }
+
+    private static AssistantIntentResult ParseAssistantIntentResult(string rawResponse)
+    {
+        if (string.IsNullOrWhiteSpace(rawResponse))
+        {
+            return new AssistantIntentResult
+            {
+                Intent = "unknown",
+                Title = "Empty AI response",
+                Details = "AI returned an empty response."
+            };
+        }
+
+        try
+        {
+            var cleanedJson = ExtractJson(rawResponse);
+
+            var parsed = JsonSerializer.Deserialize<AssistantIntentResult>(
+                cleanedJson,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+            return parsed ?? new AssistantIntentResult
+            {
+                Intent = "unknown",
+                Title = "Invalid AI response",
+                Details = rawResponse
+            };
+        }
+        catch
+        {
+            return new AssistantIntentResult
+            {
+                Intent = "unknown",
+                Title = "Invalid AI JSON",
+                Details = rawResponse
+            };
+        }
+    }
+
+    private static string ExtractJson(string text)
+    {
+        var trimmed = text.Trim();
+
+        if (trimmed.StartsWith("```json"))
+        {
+            trimmed = trimmed
+                .Replace("```json", string.Empty)
+                .Replace("```", string.Empty)
+                .Trim();
+        }
+        else if (trimmed.StartsWith("```"))
+        {
+            trimmed = trimmed
+                .Replace("```", string.Empty)
+                .Trim();
+        }
+
+        var start = trimmed.IndexOf('{');
+        var end = trimmed.LastIndexOf('}');
+
+        if (start >= 0 && end > start)
+        {
+            return trimmed[start..(end + 1)];
+        }
+
+        return trimmed;
     }
 }

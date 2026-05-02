@@ -25,4 +25,31 @@ public sealed class TaskItem
             DueAt = dueAt?.ToUniversalTime()
         };
     }
+
+    public void Update(
+    string? title,
+    string? details,
+    DateTimeOffset? dueAt,
+    string? status)
+    {
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            Title = title;
+        }
+
+        if (details is not null)
+        {
+            Details = details;
+        }
+
+        if (dueAt.HasValue)
+        {
+            DueAt = dueAt.Value;
+        }
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            Status = status;
+        }
+    }
 }

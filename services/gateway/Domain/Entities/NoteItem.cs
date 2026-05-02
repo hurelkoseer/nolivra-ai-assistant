@@ -22,4 +22,19 @@ public sealed class NoteItem
             Details = string.IsNullOrWhiteSpace(details) ? null : details.Trim()
         };
     }
+
+    public void Update(
+    string? title,
+    string? details)
+    {
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            Title = title;
+        }
+
+        if (details is not null)
+        {
+            Details = details;
+        }
+    }
 }

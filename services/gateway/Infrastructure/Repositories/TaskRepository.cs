@@ -25,10 +25,54 @@ public sealed class TaskRepository : ITaskRepository
         return _dbContext.Tasks.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
-    public Task<List<TaskItem>> GetAllAsync(CancellationToken cancellationToken = default)
+    public Task<List<TaskItem>> GetAllAsync(
+     int page,
+     int pageSize,
+     string? status = null,
+     DateTimeOffset? dueDate = null,
+     CancellationToken cancellationToken = default)
     {
-        return _dbContext.Tasks
+        var query = _dbContext.Tasks
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            query = query.Where(x => x.Status == status);
+        }
+
+        if (dueDate.HasValue)
+        {
+            var start = new DateTimeOffset(
+    dueDate.Value.Year,
+    dueDate.Value.Month,
+    dueDate.Value.Day,
+    0,
+    0,
+    0,
+    TimeSpan.Zero);
+
+            var end = start.AddDays(1);
+
+            query = query.Where(x => x.DueAt >= start && x.DueAt < end);
+        }
+
+        return query
             .OrderByDescending(x => x.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task UpdateAsync(TaskItem task, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Tasks.Update(task);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(TaskItem task, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Tasks.Remove(task);
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }

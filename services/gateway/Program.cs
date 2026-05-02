@@ -51,99 +51,88 @@ if (app.Environment.IsDevelopment())
 app.MapPost("/assistant/process", async (
     AssistantRequest request,
     AiService aiService,
-    AssistantIntentValidator validator,
-    IAssistantRequestLogRepository logRepository,
     IntentRouter intentRouter,
+    AssistantIntentValidator validator,
     CancellationToken cancellationToken) =>
 {
-    var log = new AssistantRequestLog
+    var result = await aiService.ProcessAsync(request.Input);
+
+    var validation = validator.Validate(result.ParsedResult);
+
+    if (!validation.IsValid)
     {
-        Id = Guid.NewGuid(),
-        RawUserInput = request.Input,
-        CreatedAtUtc = DateTimeOffset.UtcNow
-    };
-
-    if (string.IsNullOrWhiteSpace(request.Input))
-        return Results.BadRequest("Input is required.");
-
-    var aiProcessing = await aiService.ProcessAsync(request.Input);
-    log.RawAiResponse = aiProcessing.RawResponse;
-    log.ParsedIntent = aiProcessing.ParsedResult.Intent;
-
-    var validationResult = validator.Validate(aiProcessing.ParsedResult);
-
-    if (!validationResult.IsValid)
-    {
-        log.Success = false;
-        log.ErrorDetail = validationResult.ErrorMessage;
-        await logRepository.SaveAsync(log, cancellationToken);
-
         return Results.BadRequest(new
         {
-            error = validationResult.ErrorMessage
+            success = false,
+            error = validation.ErrorMessage
         });
     }
 
-    var handledResult = await intentRouter.RouteAsync(aiProcessing.ParsedResult, cancellationToken);
-
-    log.Success = true;
-    await logRepository.SaveAsync(log, cancellationToken);
+    var handled = await intentRouter.RouteAsync(result.ParsedResult, cancellationToken);
 
     return Results.Ok(new
     {
-        data = aiProcessing.ParsedResult,
-        handled = handledResult,
-        receivedAt = DateTime.UtcNow
+        success = true,
+        data = result.ParsedResult,
+        handled,
+        receivedAt = DateTimeOffset.UtcNow
     });
 });
 
 app.MapGet("/tasks", async (
-    ITaskRepository taskRepository,
-    CancellationToken cancellationToken) =>
+    ITaskRepository repository,
+    int page = 1,
+    int pageSize = 10,
+    string? status = null,
+    DateTimeOffset? dueDate = null,
+    CancellationToken cancellationToken = default) =>
 {
-    var tasks = await taskRepository.GetAllAsync(cancellationToken);
+    page = Math.Max(page, 1);
+    pageSize = Math.Clamp(pageSize, 1, 100);
 
-    var response = tasks.Select(x => new TaskDto(
-        x.Id,
-        x.Title,
-        x.Details,
-        x.DueAt,
-        x.CreatedAt,
-        x.Status));
+    var tasks = await repository.GetAllAsync(
+        page,
+        pageSize,
+        status,
+        dueDate,
+        cancellationToken);
 
-    return Results.Ok(response);
+    return Results.Ok(tasks);
 });
 
 app.MapGet("/notes", async (
-    INoteRepository noteRepository,
-    CancellationToken cancellationToken) =>
+    INoteRepository repository,
+    int page = 1,
+    int pageSize = 10,
+    CancellationToken cancellationToken = default) =>
 {
-    var notes = await noteRepository.GetAllAsync(cancellationToken);
+    page = Math.Max(page, 1);
+    pageSize = Math.Clamp(pageSize, 1, 100);
 
-    var response = notes.Select(x => new NoteDto(
-        x.Id,
-        x.Title,
-        x.Details,
-        x.CreatedAtUtc));
+    var notes = await repository.GetAllAsync(page, pageSize, cancellationToken);
 
-    return Results.Ok(response);
+    return Results.Ok(notes);
 });
 
 app.MapGet("/events", async (
-    IEventRepository eventRepository,
-    CancellationToken cancellationToken) =>
+    IEventRepository repository,
+    int page = 1,
+    int pageSize = 10,
+    DateTimeOffset? from = null,
+    DateTimeOffset? to = null,
+    CancellationToken cancellationToken = default) =>
 {
-    var events = await eventRepository.GetAllAsync(cancellationToken);
+    page = Math.Max(page, 1);
+    pageSize = Math.Clamp(pageSize, 1, 100);
 
-    var response = events.Select(x => new EventDto(
-        x.Id,
-        x.Title,
-        x.Details,
-        x.StartAtUtc,
-        x.EndAtUtc,
-        x.CreatedAtUtc));
+    var events = await repository.GetAllAsync(
+        page,
+        pageSize,
+        from,
+        to,
+        cancellationToken);
 
-    return Results.Ok(response);
+    return Results.Ok(events);
 });
 
 app.MapGet("/tasks/{id:guid}", async (
@@ -182,4 +171,141 @@ app.MapGet("/events/{id:guid}", async (
         : Results.Ok(calendarEvent);
 });
 
+app.MapPatch("/tasks/{id:guid}", async (
+    Guid id,
+    UpdateTaskRequest request,
+    ITaskRepository repository,
+    CancellationToken cancellationToken) =>
+{
+    var task = await repository.GetByIdAsync(id, cancellationToken);
+
+    if (task is null)
+    {
+        return Results.NotFound();
+    }
+
+    task.Update(
+    request.Title,
+    request.Details,
+    request.DueAt,
+    request.Status);
+
+    await repository.UpdateAsync(task, cancellationToken);
+
+    return Results.Ok(task);
+});
+
+app.MapPatch("/notes/{id:guid}", async (
+    Guid id,
+    UpdateNoteRequest request,
+    INoteRepository repository,
+    CancellationToken cancellationToken) =>
+{
+    var note = await repository.GetByIdAsync(id, cancellationToken);
+
+    if (note is null)
+    {
+        return Results.NotFound();
+    }
+
+    note.Update(
+    request.Title,
+    request.Details);
+
+    await repository.UpdateAsync(note, cancellationToken);
+
+    return Results.Ok(note);
+});
+
+app.MapPatch("/events/{id:guid}", async (
+    Guid id,
+    UpdateEventRequest request,
+    IEventRepository repository,
+    CancellationToken cancellationToken) =>
+{
+    var calendarEvent = await repository.GetByIdAsync(id, cancellationToken);
+
+    if (calendarEvent is null)
+    {
+        return Results.NotFound();
+    }
+
+    calendarEvent.Update(
+     request.Title,
+     request.Details,
+     request.StartAtUtc,
+     request.EndAtUtc);
+
+    await repository.UpdateAsync(calendarEvent, cancellationToken);
+
+    return Results.Ok(calendarEvent);
+});
+
+app.MapDelete("/tasks/{id:guid}", async (
+    Guid id,
+    ITaskRepository repository,
+    CancellationToken cancellationToken) =>
+{
+    var task = await repository.GetByIdAsync(id, cancellationToken);
+
+    if (task is null)
+    {
+        return Results.NotFound();
+    }
+
+    await repository.DeleteAsync(task, cancellationToken);
+
+    return Results.NoContent();
+});
+
+app.MapDelete("/notes/{id:guid}", async (
+    Guid id,
+    INoteRepository repository,
+    CancellationToken cancellationToken) =>
+{
+    var note = await repository.GetByIdAsync(id, cancellationToken);
+
+    if (note is null)
+    {
+        return Results.NotFound();
+    }
+
+    await repository.DeleteAsync(note, cancellationToken);
+
+    return Results.NoContent();
+});
+
+app.MapDelete("/events/{id:guid}", async (
+    Guid id,
+    IEventRepository repository,
+    CancellationToken cancellationToken) =>
+{
+    var calendarEvent = await repository.GetByIdAsync(id, cancellationToken);
+
+    if (calendarEvent is null)
+    {
+        return Results.NotFound();
+    }
+
+    await repository.DeleteAsync(calendarEvent, cancellationToken);
+
+    return Results.NoContent();
+});
+
 app.Run();
+
+public sealed record UpdateTaskRequest(
+    string? Title,
+    string? Details,
+    DateTimeOffset? DueAt,
+    string? Status);
+
+public sealed record UpdateNoteRequest(
+    string? Title,
+    string? Details);
+
+public sealed record UpdateEventRequest(
+    string? Title,
+    string? Details,
+    DateTimeOffset? StartAtUtc,
+    DateTimeOffset? EndAtUtc);

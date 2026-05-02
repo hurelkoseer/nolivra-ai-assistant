@@ -25,10 +25,43 @@ public sealed class EventRepository : IEventRepository
         return _dbContext.Events.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
-    public Task<List<CalendarEvent>> GetAllAsync(CancellationToken cancellationToken = default)
+    public Task<List<CalendarEvent>> GetAllAsync(
+     int page,
+     int pageSize,
+     DateTimeOffset? from = null,
+     DateTimeOffset? to = null,
+     CancellationToken cancellationToken = default)
     {
-        return _dbContext.Events
-            .OrderByDescending(x => x.CreatedAtUtc)
+        var query = _dbContext.Events
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (from.HasValue)
+        {
+            query = query.Where(x => x.StartAtUtc >= from.Value);
+        }
+
+        if (to.HasValue)
+        {
+            query = query.Where(x => x.StartAtUtc <= to.Value);
+        }
+
+        return query
+            .OrderByDescending(x => x.StartAtUtc)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task UpdateAsync(CalendarEvent calendarEvent, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Events.Update(calendarEvent);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(CalendarEvent calendarEvent, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Events.Remove(calendarEvent);
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }

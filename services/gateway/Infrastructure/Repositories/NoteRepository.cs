@@ -25,10 +25,34 @@ public sealed class NoteRepository : INoteRepository
         return _dbContext.Notes.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
-    public Task<List<NoteItem>> GetAllAsync(CancellationToken cancellationToken = default)
+    public Task<List<NoteItem>> GetAllAsync(
+    int page,
+    int pageSize,
+    CancellationToken cancellationToken = default)
     {
         return _dbContext.Notes
+            .AsNoTracking()
             .OrderByDescending(x => x.CreatedAtUtc)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task UpdateAsync(NoteItem note, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Notes.Update(note);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task UpdateAsync(CalendarEvent calendarEvent, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Events.Update(calendarEvent);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(NoteItem note, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Notes.Remove(note);
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }
