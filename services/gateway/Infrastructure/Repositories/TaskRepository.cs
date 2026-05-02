@@ -76,11 +76,24 @@ public sealed class TaskRepository : ITaskRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public Task<TaskItem?> GetByTitleAsync(string title, CancellationToken cancellationToken = default)
+    public async Task<TaskItem?> GetByTitleAsync(string title, CancellationToken cancellationToken = default)
     {
-        return _dbContext.Tasks
+        var normalized = title.Trim().ToLower();
+
+        var exact = await _dbContext.Tasks
             .OrderByDescending(x => x.CreatedAt)
-            .FirstOrDefaultAsync(x => x.Title.ToLower() == title.ToLower(), cancellationToken);
+            .FirstOrDefaultAsync(
+                x => x.Title.ToLower() == normalized,
+                cancellationToken);
+
+        if (exact is not null)
+            return exact;
+
+        return await _dbContext.Tasks
+            .OrderByDescending(x => x.CreatedAt)
+            .FirstOrDefaultAsync(
+                x => x.Title.ToLower().Contains(normalized),
+                cancellationToken);
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)

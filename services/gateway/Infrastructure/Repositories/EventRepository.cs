@@ -65,11 +65,24 @@ public sealed class EventRepository : IEventRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public Task<CalendarEvent?> GetByTitleAsync(string title, CancellationToken cancellationToken = default)
+    public async Task<CalendarEvent?> GetByTitleAsync(string title, CancellationToken cancellationToken = default)
     {
-        return _dbContext.Events
+        var normalized = title.Trim().ToLower();
+
+        var exact = await _dbContext.Events
             .OrderByDescending(x => x.CreatedAtUtc)
-            .FirstOrDefaultAsync(x => x.Title.ToLower() == title.ToLower(), cancellationToken);
+            .FirstOrDefaultAsync(
+                x => x.Title.ToLower() == normalized,
+                cancellationToken);
+
+        if (exact != null)
+            return exact;
+
+        return await _dbContext.Events
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .FirstOrDefaultAsync(
+                x => x.Title.ToLower().Contains(normalized),
+                cancellationToken);
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)

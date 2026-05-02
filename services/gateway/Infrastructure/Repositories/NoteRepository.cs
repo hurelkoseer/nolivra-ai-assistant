@@ -56,11 +56,24 @@ public sealed class NoteRepository : INoteRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public Task<NoteItem?> GetByTitleAsync(string title, CancellationToken cancellationToken = default)
+    public async Task<NoteItem?> GetByTitleAsync(string title, CancellationToken cancellationToken = default)
     {
-        return _dbContext.Notes
+        var normalized = title.Trim().ToLower();
+
+        var exact = await _dbContext.Notes
             .OrderByDescending(x => x.CreatedAtUtc)
-            .FirstOrDefaultAsync(x => x.Title.ToLower() == title.ToLower(), cancellationToken);
+            .FirstOrDefaultAsync(
+                x => x.Title.ToLower() == normalized,
+                cancellationToken);
+
+        if (exact is not null)
+            return exact;
+
+        return await _dbContext.Notes
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .FirstOrDefaultAsync(
+                x => x.Title.ToLower().Contains(normalized),
+                cancellationToken);
     }
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
