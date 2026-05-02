@@ -25,10 +25,9 @@ public sealed class TaskRepository : ITaskRepository
         return _dbContext.Tasks.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<TaskItem>> GetAllAsync(CancellationToken cancellationToken = default)
+    public Task<List<TaskItem>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Tasks
-            .AsNoTracking()
+        return _dbContext.Tasks
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync(cancellationToken);
     }

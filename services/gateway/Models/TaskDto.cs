@@ -7,4 +7,3 @@ public sealed record TaskDto(
     DateTimeOffset? DueAt,
     DateTimeOffset CreatedAt,
     string Status);
-

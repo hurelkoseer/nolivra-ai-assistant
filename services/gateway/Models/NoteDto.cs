@@ -5,4 +5,3 @@ public sealed record NoteDto(
     string Title,
     string? Details,
     DateTimeOffset CreatedAtUtc);
-

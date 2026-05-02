@@ -103,7 +103,7 @@ app.MapGet("/tasks", async (
 {
     var tasks = await taskRepository.GetAllAsync(cancellationToken);
 
-    var dto = tasks.Select(x => new TaskDto(
+    var response = tasks.Select(x => new TaskDto(
         x.Id,
         x.Title,
         x.Details,
@@ -111,7 +111,7 @@ app.MapGet("/tasks", async (
         x.CreatedAt,
         x.Status));
 
-    return Results.Ok(dto);
+    return Results.Ok(response);
 });
 
 app.MapGet("/notes", async (
@@ -120,13 +120,13 @@ app.MapGet("/notes", async (
 {
     var notes = await noteRepository.GetAllAsync(cancellationToken);
 
-    var dto = notes.Select(x => new NoteDto(
+    var response = notes.Select(x => new NoteDto(
         x.Id,
         x.Title,
         x.Details,
         x.CreatedAtUtc));
 
-    return Results.Ok(dto);
+    return Results.Ok(response);
 });
 
 app.MapGet("/events", async (
