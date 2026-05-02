@@ -11,6 +11,9 @@ public sealed class AssistantDbContext : DbContext
     }
 
     public DbSet<TaskItem> Tasks => Set<TaskItem>();
+    public DbSet<NoteItem> Notes => Set<NoteItem>();
+    public DbSet<CalendarEvent> Events => Set<CalendarEvent>();
+    public DbSet<AssistantRequestLog> AssistantRequestLogs => Set<AssistantRequestLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

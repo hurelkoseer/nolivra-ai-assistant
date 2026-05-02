@@ -15,7 +15,7 @@ public sealed class AiService
         _configuration = configuration;
     }
 
-    public async Task<AssistantIntentResult> ProcessAsync(string input)
+    public async Task<AiProcessingResult> ProcessAsync(string input)
     {
         var apiKey = _configuration["OpenAI:ApiKey"];
         var model = _configuration["OpenAI:Model"] ?? "gpt-4o-mini";
@@ -111,6 +111,6 @@ User input: {input}
         if (string.IsNullOrWhiteSpace(result.Title))
             throw new InvalidOperationException("AI returned empty title.");
 
-        return result;
+        return new AiProcessingResult(content, result);
     }
 }

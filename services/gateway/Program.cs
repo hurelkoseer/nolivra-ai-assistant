@@ -1,8 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Nolivra.Gateway.Application.Commands;
 using Nolivra.Gateway.Application.Services;
+using Nolivra.Gateway.Application.Validators;
+using Nolivra.Gateway.Domain.Entities;
 using Nolivra.Gateway.Handlers.Abstractions;
+using Nolivra.Gateway.Handlers.Event;
+using Nolivra.Gateway.Handlers.Note;
 using Nolivra.Gateway.Handlers.Task;
+using Nolivra.Gateway.Infrastructure.Middleware;
 using Nolivra.Gateway.Infrastructure.Persistence;
 using Nolivra.Gateway.Infrastructure.Repositories;
 using Nolivra.Gateway.Models;
@@ -20,11 +25,21 @@ builder.Services.AddDbContext<AssistantDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
+builder.Services.AddScoped<INoteRepository, NoteRepository>();
+builder.Services.AddScoped<IEventRepository, EventRepository>();
+builder.Services.AddScoped<IAssistantRequestLogRepository, AssistantRequestLogRepository>();
+builder.Services.AddScoped<AssistantIntentValidator>();
 builder.Services.AddScoped<CreateTaskCommandHandler>();
+builder.Services.AddScoped<CreateNoteCommandHandler>();
+builder.Services.AddScoped<CreateEventCommandHandler>();
 builder.Services.AddScoped<IIntentHandler, TaskIntentHandler>();
+builder.Services.AddScoped<IIntentHandler, NoteIntentHandler>();
+builder.Services.AddScoped<IIntentHandler, EventIntentHandler>();
 builder.Services.AddScoped<IntentRouter>();
 
 var app = builder.Build();
+
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -36,33 +51,50 @@ if (app.Environment.IsDevelopment())
 app.MapPost("/assistant/process", async (
     AssistantRequest request,
     AiService aiService,
+    AssistantIntentValidator validator,
+    IAssistantRequestLogRepository logRepository,
     IntentRouter intentRouter,
     CancellationToken cancellationToken) =>
 {
-    try
+    var log = new AssistantRequestLog
     {
-        if (string.IsNullOrWhiteSpace(request.Input))
-            return Results.BadRequest("Input is required.");
+        Id = Guid.NewGuid(),
+        RawUserInput = request.Input,
+        CreatedAtUtc = DateTimeOffset.UtcNow
+    };
 
-        var aiResult = await aiService.ProcessAsync(request.Input);
-        var handledResult = await intentRouter.RouteAsync(aiResult, cancellationToken);
+    if (string.IsNullOrWhiteSpace(request.Input))
+        return Results.BadRequest("Input is required.");
 
-        return Results.Ok(new
+    var aiProcessing = await aiService.ProcessAsync(request.Input);
+    log.RawAiResponse = aiProcessing.RawResponse;
+    log.ParsedIntent = aiProcessing.ParsedResult.Intent;
+
+    var validationResult = validator.Validate(aiProcessing.ParsedResult);
+
+    if (!validationResult.IsValid)
+    {
+        log.Success = false;
+        log.ErrorDetail = validationResult.ErrorMessage;
+        await logRepository.SaveAsync(log, cancellationToken);
+
+        return Results.BadRequest(new
         {
-            data = aiResult,
-            handled = handledResult,
-            receivedAt = DateTime.UtcNow
+            error = validationResult.ErrorMessage
         });
     }
-    catch (Exception ex)
-    {
-        Console.WriteLine(ex);
 
-        return Results.Problem(
-            title: "Request failed",
-            detail: ex.ToString(),
-            statusCode: 500);
-    }
+    var handledResult = await intentRouter.RouteAsync(aiProcessing.ParsedResult, cancellationToken);
+
+    log.Success = true;
+    await logRepository.SaveAsync(log, cancellationToken);
+
+    return Results.Ok(new
+    {
+        data = aiProcessing.ParsedResult,
+        handled = handledResult,
+        receivedAt = DateTime.UtcNow
+    });
 });
 
 app.Run();
