@@ -97,4 +97,36 @@ app.MapPost("/assistant/process", async (
     });
 });
 
+app.MapGet("/tasks", async (
+    ITaskRepository taskRepository,
+    CancellationToken cancellationToken) =>
+{
+    var tasks = await taskRepository.GetAllAsync(cancellationToken);
+
+    var dto = tasks.Select(x => new TaskDto(
+        x.Id,
+        x.Title,
+        x.Details,
+        x.DueAt,
+        x.CreatedAt,
+        x.Status));
+
+    return Results.Ok(dto);
+});
+
+app.MapGet("/notes", async (
+    INoteRepository noteRepository,
+    CancellationToken cancellationToken) =>
+{
+    var notes = await noteRepository.GetAllAsync(cancellationToken);
+
+    var dto = notes.Select(x => new NoteDto(
+        x.Id,
+        x.Title,
+        x.Details,
+        x.CreatedAtUtc));
+
+    return Results.Ok(dto);
+});
+
 app.Run();

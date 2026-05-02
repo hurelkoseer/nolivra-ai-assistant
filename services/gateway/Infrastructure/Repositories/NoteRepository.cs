@@ -24,4 +24,12 @@ public sealed class NoteRepository : INoteRepository
     {
         return _dbContext.Notes.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
+
+    public async Task<IReadOnlyList<NoteItem>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Notes
+            .AsNoTracking()
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+    }
 }
