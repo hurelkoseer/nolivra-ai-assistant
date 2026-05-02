@@ -24,4 +24,11 @@ public sealed class EventRepository : IEventRepository
     {
         return _dbContext.Events.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
+
+    public Task<List<CalendarEvent>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Events
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+    }
 }

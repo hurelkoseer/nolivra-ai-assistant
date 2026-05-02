@@ -6,4 +6,5 @@ public interface IEventRepository
 {
     Task AddAsync(CalendarEvent calendarEvent, CancellationToken cancellationToken = default);
     Task<CalendarEvent?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<List<CalendarEvent>> GetAllAsync(CancellationToken cancellationToken = default);
 }

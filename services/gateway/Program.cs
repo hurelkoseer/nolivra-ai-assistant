@@ -129,4 +129,21 @@ app.MapGet("/notes", async (
     return Results.Ok(dto);
 });
 
+app.MapGet("/events", async (
+    IEventRepository eventRepository,
+    CancellationToken cancellationToken) =>
+{
+    var events = await eventRepository.GetAllAsync(cancellationToken);
+
+    var response = events.Select(x => new EventDto(
+        x.Id,
+        x.Title,
+        x.Details,
+        x.StartAtUtc,
+        x.EndAtUtc,
+        x.CreatedAtUtc));
+
+    return Results.Ok(response);
+});
+
 app.Run();
