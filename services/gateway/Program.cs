@@ -146,4 +146,40 @@ app.MapGet("/events", async (
     return Results.Ok(response);
 });
 
+app.MapGet("/tasks/{id:guid}", async (
+    Guid id,
+    ITaskRepository repository,
+    CancellationToken cancellationToken) =>
+{
+    var task = await repository.GetByIdAsync(id, cancellationToken);
+
+    return task is null
+        ? Results.NotFound()
+        : Results.Ok(task);
+});
+
+app.MapGet("/notes/{id:guid}", async (
+    Guid id,
+    INoteRepository repository,
+    CancellationToken cancellationToken) =>
+{
+    var note = await repository.GetByIdAsync(id, cancellationToken);
+
+    return note is null
+        ? Results.NotFound()
+        : Results.Ok(note);
+});
+
+app.MapGet("/events/{id:guid}", async (
+    Guid id,
+    IEventRepository repository,
+    CancellationToken cancellationToken) =>
+{
+    var calendarEvent = await repository.GetByIdAsync(id, cancellationToken);
+
+    return calendarEvent is null
+        ? Results.NotFound()
+        : Results.Ok(calendarEvent);
+});
+
 app.Run();
