@@ -75,4 +75,16 @@ public sealed class TaskRepository : ITaskRepository
         _dbContext.Tasks.Remove(task);
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public Task<TaskItem?> GetByTitleAsync(string title, CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Tasks
+            .OrderByDescending(x => x.CreatedAt)
+            .FirstOrDefaultAsync(x => x.Title.ToLower() == title.ToLower(), cancellationToken);
+    }
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        return _dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

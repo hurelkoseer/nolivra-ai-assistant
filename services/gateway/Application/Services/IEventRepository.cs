@@ -9,4 +9,6 @@ public interface IEventRepository
     Task<List<CalendarEvent>> GetAllAsync(int page, int pageSize, DateTimeOffset? from = null, DateTimeOffset? to = null, CancellationToken cancellationToken = default);
     Task UpdateAsync(CalendarEvent calendarEvent, CancellationToken cancellationToken = default);
     Task DeleteAsync(CalendarEvent calendarEvent, CancellationToken cancellationToken = default);
+    Task<CalendarEvent?> GetByTitleAsync(string title, CancellationToken cancellationToken = default);
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

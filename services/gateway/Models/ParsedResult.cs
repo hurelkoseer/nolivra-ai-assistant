@@ -1,6 +1,6 @@
 namespace Nolivra.Gateway.Models;
 
-public sealed class AssistantIntentResult
+public sealed class ParsedResult
 {
     public string? Intent { get; set; }
     public string? Title { get; set; }

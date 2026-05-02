@@ -32,19 +32,81 @@ Today is: {today}
 
 Return ONLY valid JSON in this format:
 {{
-  ""intent"": ""task|event|note|wake_alert|email_action"",
-  ""title"": ""string"",
+  ""intent"": ""task|event|note|update"",
+  ""title"": ""string or null"",
   ""datetime"": ""ISO-8601 string or null"",
-  ""details"": ""string or null""
+  ""details"": ""string or null"",
+  ""entityType"": ""task|event|note or null"",
+  ""targetTitle"": ""string or null"",
+  ""targetId"": null,
+  ""fieldsToUpdate"": {{
+    ""title"": ""string or null"",
+    ""datetime"": ""ISO-8601 string or null"",
+    ""details"": ""string or null"",
+    ""status"": ""Pending|Completed or null""
+  }}
 }}
 
 Rules:
+- Supported intents are only: task, event, note, update.
 - Resolve relative dates like ""yarın"", ""bugün"", ""gelecek hafta"" using today's date.
 - datetime must be ISO-8601 if present.
 - title must be short and clear.
 - details can be null.
+- For task, note, and event: entityType, targetTitle, targetId, and fieldsToUpdate must be null.
+- For update: title, datetime, and details must be null.
+- For update: entityType must be one of task, event, note.
+- For update: targetTitle must be the existing item title mentioned by the user.
+- For update: targetId must be null unless user explicitly provides an id.
+- For update: fieldsToUpdate must contain only the fields the user wants to change.
+- For note updates, use details when the user wants to change note content.
+- For task status updates, use status as Pending or Completed.
 - Do not return markdown.
 - Do not explain anything.
+
+Examples:
+
+User input: berbere git taskını completed yap
+{{
+  ""intent"": ""update"",
+  ""title"": null,
+  ""datetime"": null,
+  ""details"": null,
+  ""entityType"": ""task"",
+  ""targetTitle"": ""Berbere git"",
+  ""targetId"": null,
+  ""fieldsToUpdate"": {{
+    ""status"": ""Completed""
+  }}
+}}
+
+User input: yarınki doktor randevumu 16:00 yap
+{{
+  ""intent"": ""update"",
+  ""title"": null,
+  ""datetime"": null,
+  ""details"": null,
+  ""entityType"": ""event"",
+  ""targetTitle"": ""Doktor randevusu"",
+  ""targetId"": null,
+  ""fieldsToUpdate"": {{
+    ""datetime"": ""{today}T16:00:00""
+  }}
+}}
+
+User input: Market notunun detayını süt ve yumurta al olarak değiştir
+{{
+  ""intent"": ""update"",
+  ""title"": null,
+  ""datetime"": null,
+  ""details"": null,
+  ""entityType"": ""note"",
+  ""targetTitle"": ""Market"",
+  ""targetId"": null,
+  ""fieldsToUpdate"": {{
+    ""details"": ""süt ve yumurta al""
+  }}
+}}
 
 User input: {input}
 ";

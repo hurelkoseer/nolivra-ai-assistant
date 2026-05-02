@@ -55,4 +55,15 @@ public sealed class NoteRepository : INoteRepository
         _dbContext.Notes.Remove(note);
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public Task<NoteItem?> GetByTitleAsync(string title, CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Notes
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .FirstOrDefaultAsync(x => x.Title.ToLower() == title.ToLower(), cancellationToken);
+    }
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        return _dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

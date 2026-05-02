@@ -9,4 +9,6 @@ public interface INoteRepository
     Task<List<NoteItem>> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken = default);
     Task UpdateAsync(NoteItem note, CancellationToken cancellationToken = default);
     Task DeleteAsync(NoteItem note, CancellationToken cancellationToken = default);
+    Task<NoteItem?> GetByTitleAsync(string title, CancellationToken cancellationToken = default);
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

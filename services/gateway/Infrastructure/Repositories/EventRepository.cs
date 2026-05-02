@@ -64,4 +64,16 @@ public sealed class EventRepository : IEventRepository
         _dbContext.Events.Remove(calendarEvent);
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public Task<CalendarEvent?> GetByTitleAsync(string title, CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Events
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .FirstOrDefaultAsync(x => x.Title.ToLower() == title.ToLower(), cancellationToken);
+    }
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        return _dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

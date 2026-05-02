@@ -7,6 +7,7 @@ using Nolivra.Gateway.Handlers.Abstractions;
 using Nolivra.Gateway.Handlers.Event;
 using Nolivra.Gateway.Handlers.Note;
 using Nolivra.Gateway.Handlers.Task;
+using Nolivra.Gateway.Handlers.Update;
 using Nolivra.Gateway.Infrastructure.Middleware;
 using Nolivra.Gateway.Infrastructure.Persistence;
 using Nolivra.Gateway.Infrastructure.Repositories;
@@ -36,6 +37,7 @@ builder.Services.AddScoped<IIntentHandler, TaskIntentHandler>();
 builder.Services.AddScoped<IIntentHandler, NoteIntentHandler>();
 builder.Services.AddScoped<IIntentHandler, EventIntentHandler>();
 builder.Services.AddScoped<IntentRouter>();
+builder.Services.AddScoped<IIntentHandler, UpdateIntentHandler>();
 
 var app = builder.Build();
 
